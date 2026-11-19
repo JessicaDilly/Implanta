@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Proposta de ícone: lote visto de cima, recuo tracejado e a unidade implantada -->
+  <rect width="512" height="512" rx="112" fill="#1565c0"/>
+  <path d="M112 144l240-48 64 272-272 48z" fill="#fff"/>
+  <path d="M164 188l152-30.4 41.6 174.4-171.2 31.2z" fill="none" stroke="#1565c0" stroke-width="14" stroke-dasharray="26 18" stroke-linejoin="round"/>
+  <rect x="200" y="216" width="104" height="72" rx="10" transform="rotate(-11 252 252)" fill="#2e7d32"/>
+</svg>
