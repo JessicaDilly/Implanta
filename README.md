@@ -129,11 +129,12 @@ Botão **3D** na barra.
 
 - **Níveis de detalhe:**
   - **Volumes:** massas simples;
-  - **Detalhado:** quadras com linhas, rede e alambrado; edificações com janelas, porta, platibanda e telhado metálico; árvores por tipo.
+  - **Detalhado:** quadras de tênis, padel e infantil modeladas com as medidas oficiais (linhas, rede, alambrado, vidro do padel e postes de iluminação); edificações com janelas, porta, platibanda e telhado metálico; árvores por tipo.
 - **Relevo:** o terreno é remodelado pelas plataformas e taludes do projeto.
 - **Entorno:** prédios num raio de **1 km** do lote.
 - **Insolação:** sombras e luz do sol na data e hora escolhidas.
-- **Camadas:** mostrar ou esconder projeto, árvores, vizinhos, entorno, sombras e relevo.
+- **Caminhar:** câmera na altura dos olhos (1,6 m), como no Street View. Arraste para olhar em volta e toque no chão para ir até o ponto. No computador, ande com W A S D ou as setas; no tablet, use o joystick. **Esc** sai. Dentro do lote, o chão vira gramado para não aparecer a foto de satélite borrada.
+- **Camadas:** mostrar ou esconder projeto, árvores, vizinhos, entorno, sombras, relevo e o chão limpo da caminhada.
 - **Medir:** toque em dois pontos para ver distância, desnível e inclinação. Fora do modo medir, tocar num volume mostra o nome e a altura.
 - **Imagem:** salva a vista em PNG com a marca Implanta.
 
@@ -273,40 +274,68 @@ O estudo fica salvo automaticamente **no próprio navegador**. Nada é enviado p
 
 ## Para desenvolvedores
 
-O app é um **único arquivo HTML**, sem servidor. Usa Leaflet, Turf, jsPDF e MapLibre GL (carregado só quando a vista 3D é aberta).
+O app roda direto no navegador, sem build: o que está no repositório é o que vai para o ar. Usa Leaflet, Turf e jsPDF, além de MapLibre GL e Three.js, carregados só quando a vista 3D é aberta.
 
 ### Estrutura
 
 ```
-implantacao/
-├── index.html            código-fonte do app
-├── build.ps1             gera o arquivo final e a pasta publicar
+implanta/
+├── index.html            só a página: painéis, barras e botões, e a lista de estilos e scripts
+├── css/                  estilos, um arquivo por parte da tela
+├── js/
+│   ├── abertura.js       animação de abertura
+│   ├── dados.js          lista e baixa as plantas padrão e as bases de lotes
+│   ├── base/             utilidades usadas em todo o app
+│   ├── mapa/             mapa 2D (Leaflet): criação e camadas, geometria, endereço, painel de camadas, mapas base
+│   ├── estudo/           estado do estudo, atualização, métricas, opções A/B/C, desfazer e salvamento
+│   ├── blocos/           tipos de bloco, desenho, árvores, criar/mover/girar, seleção
+│   ├── plantas/          leitor de DXF e biblioteca de plantas importadas
+│   ├── lote/             lote e recuos, lotes do cadastro da prefeitura
+│   ├── interface/        modos One e Pro, menu de ferramentas, catálogo, roda TOOLS
+│   ├── ferramentas/      medir, caminhos, pincel, régua, roda de cores, guias
+│   ├── orcamento/        simulador e orçamento do estudo
+│   ├── exportacao/       KML e DXF, PDF, Google Earth
+│   ├── sol/              posição do sol, vizinhos, sombras e horas de sol, barra de insolação
+│   ├── terreno/          elevação, taludes, terreno modificado, perfis, painel
+│   ├── 3d/               relevo, modelo do estudo, camadas do 3D, vista 3D, ferramentas, chão, quadras em Three.js, caminhar
+│   └── iniciar.js        abre o último estudo salvo e recebe as plantas e os lotes quando chegam
 ├── plantas/              plantas padrão em DXF (START, STANDARD, PLUS)
-├── dados/                bases de lotes em JSON e o script de preparação
+├── dados/                bases de lotes em JSON
 ├── manifest.webmanifest  instalação como app
-├── icone.svg, icone-192.png, icone-512.png
-├── ROADMAP.md            histórico e próximas fases
-└── publicar/             arquivos prontos para o GitHub Pages
+└── icone.svg, icone-192.png, icone-512.png
 ```
 
-### Gerar a versão para publicar
+### Rodar no computador
 
-```powershell
-powershell -ExecutionPolicy Bypass -File build.ps1
+As plantas e os lotes são lidos de arquivos separados, então o app precisa de um servidor local. Aberto direto do disco, ele funciona, mas sem as plantas padrão e sem os lotes.
+
+```
+python -m http.server 8765
 ```
 
-O build embute as plantas DXF e as bases de lotes dentro do `index.html` e copia tudo para `publicar/`.
+Depois abra http://localhost:8765. A extensão Live Server do VS Code também serve.
+
+### Regras do código
+
+- **A ordem dos `<script>` no `index.html` importa.** Os arquivos dividem o mesmo escopo global: no carregamento, um arquivo só pode usar o que os de cima já definiram. Dentro de funções e eventos, pode usar qualquer coisa. Para ligar um botão a uma função de um arquivo de baixo, use `() => funcao()` em vez de `funcao`.
+- **A ordem dos estilos também importa:** em empate, vale a regra do arquivo de baixo.
 
 ### Publicar no GitHub Pages
 
-No repositório, use **Add file → Upload files**, envie todo o conteúdo da pasta `publicar/` e confirme o commit. O site atualiza em 1 a 2 minutos.
+O site é publicado a partir da `main`. Envie as pastas junto com o `index.html`, por git ou arrastando as pastas em **Add file → Upload files**. O site atualiza em 1 a 2 minutos.
+
+Não envie mais o `index.html` único gerado pelo `build.ps1`: ele substituiria a página dividida e o app ficaria sem os estilos e scripts das pastas.
+
+### Adicionar uma planta padrão
+
+Coloque o `.dxf` em `plantas/` e acrescente o nome em `PLANTAS_PADRAO`, em `js/dados.js`.
 
 ### Adicionar uma nova cidade ao mapeamento de lotes
 
 1. Obtenha a base cadastral de lotes da cidade (geometria, área, zona e situação de ocupação).
-2. Converta para o formato de `dados/belvedere.json`, usando `dados/preparar-lotes.ps1` como modelo.
-3. Coloque o JSON em `dados/` e rode o build.
+2. Converta para o formato de `dados/belvedere.json`, usando o `preparar-lotes.ps1` como modelo.
+3. Coloque o JSON em `dados/` e acrescente o nome em `BASES_LOTES`, em `js/dados.js`.
 
 ### Atualizar o orçamento
 
-O cálculo foi copiado do simulador do painel de arquitetura (módulo `ORC` no `index.html`). Quando o simulador do painel mudar, copie de novo as referências de mercado, o catálogo e as funções de cálculo.
+O cálculo foi copiado do simulador do painel de arquitetura (módulo `ORC`, em `js/orcamento/simulador.js`). Quando o simulador do painel mudar, copie de novo as referências de mercado, o catálogo e as funções de cálculo.

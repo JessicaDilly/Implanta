@@ -1,0 +1,36 @@
+/* Estudo solar: barra de insolação, etiquetas e mapa de horas de sol */
+.heat-img{image-rendering:pixelated}
+/* Barra de insolação: mesmo visual dos demais menus (cartão claro, vermelho da marca) */
+#solbar{position:fixed;left:50%;transform:translateX(-50%);bottom:76px;z-index:1001;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 12px 6px;width:min(860px,calc(100vw - 24px));font-size:13px;border-radius:14px}
+.sb-play{width:38px;height:38px;border-radius:50%;border:none;background:#C8202F;color:#fff;font-size:15px;cursor:pointer;flex:none;box-shadow:0 2px 6px rgba(200,32,47,.35)}
+.sb-seasons{display:flex;background:#eef1f4;border-radius:10px;padding:3px;flex:none}
+.sb-seasons button{border:none;background:transparent;color:var(--ink);border-radius:8px;padding:6px 10px;font-size:12.5px;cursor:pointer}
+.sb-seasons button.on{background:#fff;color:#C8202F;font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+#solbar input[type=date]{width:auto;padding:5px 7px;font-size:13px;flex:none}
+.sb-time{position:relative;flex:1 1 220px;min-width:180px;padding-top:14px}
+.sb-marks{position:absolute;left:0;right:0;top:-2px;height:14px;font-size:10.5px;color:var(--muted)}
+.sb-marks span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+.sb-marks .now{color:#fff;background:#C8202F;border-radius:8px;padding:0 6px;font-weight:700;top:-2px}
+#solbar input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:10px;border-radius:5px;border:1px solid var(--line);padding:0;margin:4px 0;background:#eef1f4;cursor:pointer}
+#solbar input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:#fff;border:3px solid #C8202F;box-shadow:0 1px 4px rgba(0,0,0,.35)}
+#solbar input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:#fff;border:3px solid #C8202F}
+.sb-heat{display:flex;align-items:center;gap:5px;margin:0;color:var(--ink);font-size:12.5px;cursor:pointer;flex:none}
+.sb-heat input{width:16px;height:16px;accent-color:#C8202F}
+#solbar .xbtn{color:var(--muted);flex:none}
+.sb-info{flex-basis:100%;display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--muted);padding-left:48px}
+.sb-info b{color:var(--ink)}
+.sb-legend{display:inline-flex;align-items:center;gap:6px}
+.sb-legend i{display:inline-block;width:90px;height:7px;border-radius:4px}
+#createbar .on-sol{background:#C8202F;color:#fff}
+body.sol #ctx,body.sol #lotcard{bottom:178px}
+body.sol .leaflet-bottom{bottom:150px}
+@media (hover:none),(pointer:coarse),(max-width:700px){#solbar{bottom:14px}body.sol #wheel{bottom:150px}.sb-info{padding-left:0}}
+/* Estudo solar */
+.leaflet-shadows-pane svg{filter:blur(1.4px)}
+.sun-tag{font:800 11px Nunito,system-ui,sans-serif;text-align:center;line-height:20px;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.35);pointer-events:none;white-space:nowrap}
+.sun-tag.sol{background:#ffca28;color:#3e2c00}.sun-tag.meia{background:#fff3c4;color:#5d4a00}.sun-tag.sombra{background:#455a64;color:#fff}
+.sun-lbl{font:600 11px system-ui,sans-serif;color:#fff;text-shadow:0 0 3px #000,0 0 2px #000;white-space:nowrap;text-align:center;pointer-events:none}
+.sun-lbl.n{color:#ff5252;font-size:14px}
+.sun-lbl.h{font-weight:500;font-size:10px;color:#ffe082}
+.sol-card{background:#f6f8fa;border-radius:10px;padding:8px 10px;font-size:12.5px;line-height:1.5;margin-top:8px}
+.sol-card b{color:var(--ink)}

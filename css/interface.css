@@ -1,0 +1,99 @@
+/* Interface: barra de cima, roda TOOLS, barra de criação, menus, opções A/B/C e guia do modo One */
+#topbar{position:fixed;left:12px;top:12px;display:flex;align-items:center;gap:2px;padding:4px;z-index:1000;border-radius:14px}
+#topbar button{min-width:44px;height:44px;border:none;background:transparent;border-radius:10px;display:grid;place-items:center;color:var(--ink);cursor:pointer;padding:0 8px;margin:0;font-size:13px}
+#topbar button svg{width:22px;height:22px}
+#topbar button:disabled{opacity:.3}
+#topbar button.on{background:var(--accent);color:#fff}
+#topbar .brand{display:flex;align-items:center;gap:7px;padding:0 6px 0 4px;font-size:15px;letter-spacing:.01em}
+#topbar .brand svg{width:32px;height:32px;filter:drop-shadow(0 2px 3px rgba(120,16,28,.25))}
+#topbar .wordmark{font:700 22px/1 "Baloo 2",Nunito,system-ui,sans-serif;letter-spacing:-.01em;padding-top:3px}
+#topbar .wordmark span:first-child{color:#2b2b2b}#topbar .wordmark span:last-child{color:#C8202F}
+@media (max-width:560px){#topbar .brand b{display:none}}
+#topbar .sep{width:1px;height:26px;background:var(--line);margin:0 4px}
+/* Roda TOOLS: abre ao passar o mouse (ou ao tocar no centro), pode ser fixada aberta */
+#wheel{position:fixed;left:16px;bottom:16px;width:216px;height:216px;z-index:1000;pointer-events:none;transition:bottom .25s}
+#wheel>*{pointer-events:auto}
+#wheel .ring{position:absolute;inset:0;border-radius:50%;transition:transform .28s cubic-bezier(.2,.9,.3,1.2),opacity .2s}
+#wheel [data-tool]{position:absolute;left:50%;top:50%;width:54px;height:54px;margin:-27px 0 0 -27px;--s:1;
+  transform:rotate(var(--a)) translate(76px) rotate(calc(-1 * var(--a))) scale(var(--s));
+  transition:transform .14s ease-out,opacity .2s,background .15s;border:none;background:transparent;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;color:var(--ink);cursor:pointer;padding:0;font-size:9.5px}
+#wheel [data-tool] svg{width:22px;height:22px}
+#wheel [data-tool].on{background:var(--accent);color:#fff}
+#wheel-center{position:absolute;left:50%;top:50%;width:66px;height:66px;margin:-33px 0 0 -33px;border-radius:50%;background:var(--accent);color:#fff;border:4px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.35);font-size:10px;font-weight:700;letter-spacing:.06em;cursor:pointer;padding:0;line-height:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transition:transform .2s}
+#wheel-center svg{width:24px;height:24px}
+#wheel-center.act{box-shadow:0 0 0 3px rgba(21,101,192,.45),0 2px 8px rgba(0,0,0,.35)}
+#wheel-pin{position:absolute;left:50%;top:50%;width:30px;height:30px;margin:-15px 0 0 -15px;transform:rotate(-112.5deg) translate(100px) rotate(112.5deg);border-radius:50%;border:2px solid #fff;background:#eef1f4;color:var(--muted);cursor:pointer;padding:0;display:grid;place-items:center;box-shadow:0 1px 4px rgba(0,0,0,.3);transition:transform .28s,opacity .2s}
+#wheel-pin svg{width:15px;height:15px}
+#wheel-pin.on{background:var(--accent);color:#fff}
+#wheel.min .ring{transform:scale(.3);opacity:0;pointer-events:none}
+#wheel.min [data-tool]{transform:rotate(var(--a)) translate(0) rotate(calc(-1 * var(--a))) scale(.3);opacity:0;pointer-events:none}
+#wheel.min #wheel-pin{transform:scale(.3);opacity:0;pointer-events:none}
+.lib{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px}
+.lib .it{position:relative;border:1px solid var(--line);border-radius:12px;background:#fff;padding:6px;cursor:pointer;text-align:center;font-size:12px;line-height:1.3}
+.lib .it svg{width:100%;height:60px;display:block;margin-bottom:4px}
+.lib .it .x{position:absolute;top:3px;right:3px;width:24px;height:24px;border-radius:50%;border:none;background:#eceff1;font-size:14px;cursor:pointer;padding:0}
+/* Opções A/B/C */
+#opts{position:fixed;left:50%;top:12px;transform:translateX(-50%);z-index:999;display:flex;gap:3px;padding:4px;align-items:center;max-width:calc(100vw - 720px);overflow-x:auto}
+.opt{border:none;background:transparent;border-radius:9px;padding:8px 12px;font-size:13px;cursor:pointer;color:var(--ink);white-space:nowrap;display:flex;align-items:center;gap:6px}
+.opt.on{background:var(--accent);color:#fff;font-weight:600}
+.opt.add{font-size:18px;padding:4px 11px;color:var(--accent)}
+.opt.cmp{color:var(--accent);font-weight:600}
+.opt:disabled{opacity:.35;cursor:default}
+.opt-x{font-size:15px;opacity:.8}
+#ctx{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);padding:8px 10px;z-index:1000;display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center;width:max-content;max-width:calc(100vw - 24px)}
+#ctx b{font-size:14px;padding:0 4px}
+#ctx label{display:flex;align-items:center;gap:4px;margin:0}
+#ctx input{width:72px;padding:6px}
+#ctx .btn{min-height:38px;padding:6px 10px;margin:0}
+#toast{position:fixed;left:50%;top:14px;transform:translateX(-50%);padding:8px 14px;font-size:14px;z-index:1100;pointer-events:none;transition:opacity .3s;max-width:calc(100vw - 24px)}
+#topbar #btn-fundo{display:flex;align-items:center;gap:5px}
+/* Modo One (simples) e Pro (completo) */
+.modo{display:flex;background:#eef1f4;border-radius:9px;padding:2px;margin:0 2px}
+#topbar .modo button{border:none;background:transparent;border-radius:7px;padding:5px 10px;font:800 12px Nunito,system-ui,sans-serif;letter-spacing:.03em;cursor:pointer;color:var(--muted);min-width:0;height:auto}
+#topbar .modo button.on{background:#fff;color:#C8202F;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+body.one .pro-only{display:none!important}
+body:not(.one) .one-only{display:none!important}
+#guide{position:fixed;left:12px;top:70px;z-index:998;width:min(290px,calc(100vw - 24px));padding:12px 14px}
+#guide .g-hd{display:flex;justify-content:space-between;align-items:center;cursor:pointer}
+#guide .g-hd b{font-size:14px}
+#guide .g-bar{height:5px;background:#eef1f4;border-radius:3px;margin:8px 0;overflow:hidden}
+#guide .g-bar i{display:block;height:100%;background:#C8202F;border-radius:3px;transition:width .4s}
+#guide ol{list-style:none;margin:0;padding:0}
+#guide li{display:flex;align-items:center;gap:9px;padding:7px 4px;border-radius:8px;cursor:pointer;font-size:13.5px}
+#guide li:hover{background:#f6f7f8}
+#guide li .n{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font:800 11px Nunito,system-ui;background:#eef1f4;color:var(--muted);flex:none}
+#guide li.ok .n{background:#2e7d32;color:#fff}
+#guide li.ok span:last-child{color:var(--muted);text-decoration:line-through}
+#guide li.next{background:#fff4f4}
+#guide li.next .n{background:#C8202F;color:#fff}
+#guide.min ol,#guide.min .g-bar{display:none}
+/* Menus por categoria da barra de baixo */
+#cbmenu{position:fixed;bottom:76px;z-index:1003;width:min(440px,calc(100vw - 24px));max-height:min(420px,calc(100% - 180px));overflow:auto;padding:12px 14px}
+.cbm-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:15px}
+.cbm-lib{grid-template-columns:repeat(auto-fill,minmax(118px,1fr))}
+.cbm-all{width:100%;margin:10px 0 0}
+.lib .it .nm{font-weight:600;font-size:12.5px;color:var(--ink)}
+.lib .it .md{font-size:11px;color:var(--muted)}
+.lib .it .mu{position:absolute;top:4px;left:4px;font-size:9.5px;font-weight:700;background:#fff4d6;color:#7a5600;border-radius:5px;padding:1px 5px}
+.lib .it:hover{border-color:var(--accent);box-shadow:0 2px 8px rgba(21,101,192,.15)}
+.lib-h{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:14px 0 6px}
+.cb-caret{position:absolute;right:3px;bottom:3px;width:0;height:0;border-left:3px solid transparent;border-right:3px solid transparent;border-top:4px solid currentColor;opacity:.55}
+/* Barra de criação (estilo Spacio) */
+#createbar{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:1002;display:flex;align-items:center;gap:1px;padding:5px 6px;max-width:calc(100vw - 24px)}
+#createbar button{position:relative;width:40px;height:40px;border:none;background:transparent;border-radius:10px;display:grid;place-items:center;color:var(--ink);cursor:pointer;padding:0;flex:none;transition:background .12s,transform .12s}
+#createbar button svg{width:22px;height:22px}
+#createbar button:hover{background:#eef1f4}
+#createbar button:active{transform:scale(.92)}
+#createbar button.on{background:var(--accent);color:#fff}
+.cb-sep{width:1px;height:26px;background:var(--line);margin:0 4px;flex:none}
+@media (hover:hover){#createbar [data-tip]:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 9px);left:50%;transform:translateX(-50%);background:#1d2329;color:#fff;font-size:12px;font-weight:500;padding:5px 9px;border-radius:7px;white-space:nowrap;pointer-events:none;box-shadow:0 2px 6px rgba(0,0,0,.3)}}
+/* Computador (mouse): barra de criação embaixo, sem a roda.
+   Tablet e celular (toque) ou janela estreita: roda TOOLS, sem a barra. */
+#ctx,#lotcard{bottom:76px}
+#wheel{display:none}
+@media (hover:hover) and (pointer:fine) and (min-width:701px){.tb-touch{display:none!important}}
+@media (hover:none),(pointer:coarse),(max-width:700px){
+  #createbar{display:none}
+  #wheel{display:block}
+  #ctx,#lotcard{bottom:16px}
+}

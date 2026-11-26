@@ -1,0 +1,13 @@
+/* Pincel (roda de cores e régua) e caminhos */
+/* Roda de cores e régua do pincel */
+.cw-wrap{display:flex;gap:12px;align-items:center}
+.cam-item{display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--line);font-size:12.5px;color:var(--ink)}
+.cam-item span:nth-child(2){flex:1}
+#cwheel{width:140px;height:140px;border-radius:50%;cursor:crosshair;touch-action:none;flex:none;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.cw-side{flex:1;min-width:0}
+.cw-prev{height:34px;border-radius:9px;border:1px solid var(--line);margin-bottom:6px}
+#cw-hex{font:600 13px ui-monospace,monospace;text-transform:uppercase;padding:6px}
+#ruler{position:fixed;left:0;top:0;width:560px;height:64px;z-index:997;transform-origin:50% 50%;border-radius:10px;background:rgba(255,255,255,.82);box-shadow:0 2px 10px rgba(0,0,0,.28);cursor:grab;touch-action:none;backdrop-filter:blur(2px)}
+#ruler canvas{width:100%;height:100%;display:block;border-radius:10px}
+#ruler .r-ang{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font:800 15px Nunito,system-ui,sans-serif;color:#2b2b2b;pointer-events:none}
+#ruler .r-rot{position:absolute;right:-14px;top:50%;width:26px;height:26px;margin-top:-13px;border-radius:50%;background:#C8202F;border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);cursor:grab}
