@@ -178,7 +178,15 @@ svg.prof text{font-size:9px;fill:#66707a;font-family:system-ui,sans-serif}
 .v3d-bar .seg{margin:0}
 body.v3d #createbar,body.v3d #wheel,body.v3d #ctx,body.v3d #lotcard{display:none!important}
 body.v3d #solbar{z-index:1010;top:12px;bottom:auto}
-#v3d-sol.on-sol,#v3d-med.on-sol{background:#C8202F;color:#fff;border-color:#C8202F}
+#v3d-sol.on-sol,#v3d-med.on-sol,#v3d-walk.on-sol{background:#C8202F;color:#fff;border-color:#C8202F}
+/* Caminhar: câmera na altura dos olhos. O "pad" recebe os gestos no lugar do mapa e o joystick anda e vira */
+.v3d-bar{z-index:1}
+#walk-pad{position:absolute;inset:0;z-index:1;cursor:grab;touch-action:none}
+#walk-pad:active{cursor:grabbing}
+#walk-joy{position:absolute;right:22px;bottom:118px;width:116px;height:116px;z-index:2;border-radius:50%;background:rgba(255,255,255,.28);border:2px solid rgba(255,255,255,.8);box-shadow:0 2px 10px rgba(0,0,0,.3);touch-action:none;cursor:pointer}
+#walk-joy i{position:absolute;left:50%;top:50%;width:48px;height:48px;margin:-24px 0 0 -24px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.35);pointer-events:none}
+@media (max-width:700px){body.walk .v3d-bar>.seg,body.walk #v3d-cam-btn,body.walk #v3d-close{display:none}}
+body.walk .v3d-bar .so-orbita,body.walk #map3d .maplibregl-ctrl-top-right{display:none}
 .orc-t{width:100%;border-collapse:collapse;font-size:12.5px;margin:4px 0;table-layout:fixed}
 .orc-t td:first-child{width:36%}.orc-t td:nth-child(3){width:64px}.orc-comp td:first-child{width:auto;word-break:break-word}.orc-comp td:nth-child(3),.orc-comp th:nth-child(3){width:44px}
 .orc-t td,.orc-t th{padding:4px 3px;border-bottom:1px solid var(--line,#eee);text-align:left;vertical-align:middle}
@@ -626,15 +634,18 @@ select{font-size:15px;padding:8px;border:1px solid #c5ccd3;border-radius:8px;wid
 <!-- Vista 3D (MapLibre GL, carregada sob demanda) -->
 <div id="map3d" hidden>
   <div id="map3d-canvas"></div>
+  <div id="walk-pad" hidden></div>
+  <div id="walk-joy" hidden title="Arraste para andar e virar"><i></i></div>
   <div class="v3d-bar card">
     <button class="btn primary" id="v3d-close">← Voltar ao 2D</button>
+    <button class="btn" id="v3d-walk" title="Andar pelo terreno na altura dos olhos, como no Street View">🚶 Caminhar</button>
     <div class="seg" id="v3d-lod" title="Nível de detalhe"><button data-lod="volumes">Volumes</button><button data-lod="detalhe" class="on">Detalhado</button></div>
     <button class="btn" id="v3d-sol" title="Estudo de insolação: sol, sombras e luz no 3D">☀ Insolação</button>
     <button class="btn" id="v3d-cam-btn" title="Mostrar ou esconder partes do modelo">▤ Camadas</button>
-    <button class="btn" id="v3d-med" title="Medir distância e desnível; sem medir, toque num volume para ver a altura">📏 Medir</button>
+    <button class="btn so-orbita" id="v3d-med" title="Medir distância e desnível; sem medir, toque num volume para ver a altura">📏 Medir</button>
     <button class="btn" id="v3d-img" title="Salvar a vista 3D como imagem PNG">📷 Imagem</button>
-    <label>Exagero do relevo <input type="range" id="v3d-exag" min="1" max="3" step="0.5" value="1"></label>
-    <span class="hint">Arraste com o botão direito (ou dois dedos) para girar e inclinar.</span>
+    <label class="so-orbita">Exagero do relevo <input type="range" id="v3d-exag" min="1" max="3" step="0.5" value="1"></label>
+    <span class="hint" id="v3d-dica">Arraste com o botão direito (ou dois dedos) para girar e inclinar.</span>
   </div>
   <div id="v3d-cam" class="card" hidden>
     <b>Camadas do 3D</b>
@@ -644,6 +655,7 @@ select{font-size:15px;padding:8px;border:1px solid #c5ccd3;border-radius:8px;wid
     <label class="lay"><span>Entorno (até 1 km)</span><input type="checkbox" data-c="entorno" checked></label>
     <label class="lay"><span>Sombras da insolação</span><input type="checkbox" data-c="sombra" checked></label>
     <label class="lay"><span>Relevo</span><input type="checkbox" data-c="relevo" checked></label>
+    <label class="lay"><span>Chão limpo na caminhada</span><input type="checkbox" data-c="chao" checked></label>
   </div>
 </div>
 <div id="ctx" class="card" hidden></div>
@@ -193947,6 +193959,7 @@ function loadCss(href) { const l = document.createElement('link'); l.rel = 'styl
 // árvores em 3D por tipo e estacionamento com as vagas pintadas.
 let LOD3D = 'detalhe';
 function studyGeoJSON() {
+  Q3D.dirty = true; // o modelo das quadras em Three.js é refeito junto com esta geometria
   const F = [], R3 = (b, x0, y0, x1, y1) => { const r = [[x0, y0], [x1, y0], [x1, y1], [x0, y1], [x0, y0]].map(([x, y]) => { const q = toLL(b, x, y); return [q[1], q[0]]; }); return {type: 'Polygon', coordinates: [r]}; };
   const LN = (b, pts) => ({type: 'LineString', coordinates: pts.map(([x, y]) => { const q = toLL(b, x, y); return [q[1], q[0]]; })});
   let grp = 'proj', hgt = 0, nome = '';
@@ -193957,6 +193970,11 @@ function studyGeoJSON() {
   if (lot) {
     F.push({type: 'Feature', properties: {t: 'lote'}, geometry: {type: 'LineString', coordinates: lot.ring}});
     polysOf(buildable).forEach(r => F.push({type: 'Feature', properties: {t: 'recuo'}, geometry: {type: 'LineString', coordinates: r}}));
+    F.push({type: 'Feature', properties: {t: 'terreno'}, geometry: lot.feat.geometry}); // chão limpo do lote, usado na caminhada
+  }
+  { // disco de 150 m em volta do estudo: recebe a textura de grão que disfarça o borrão do satélite visto de perto
+    const c = lot ? turf.centroid(lot.feat).geometry.coordinates : blocks.length ? [blocks[0].lng, blocks[0].lat] : [map.getCenter().lng, map.getCenter().lat];
+    F.push({type: 'Feature', properties: {t: 'entorno'}, geometry: turf.circle(c, 150, {units: 'meters', steps: 48}).geometry});
   }
   if (VIZ.on) VIZ.list.forEach(v => F.push({type: 'Feature', properties: {t: 'ext', col: '#c9ced4', base: 0, top: v.h, g: 'viz', h: v.h, n: 'Vizinho'}, geometry: {type: 'Polygon', coordinates: [v.ring]}}));
   if (typeof caminhos !== 'undefined') {
@@ -193975,6 +193993,7 @@ function studyGeoJSON() {
     if (COURT_COLORS[b.kind]) { // tênis: escape, quadra, linhas, rede, alambrado
       const C = COURT_COLORS[b.kind], cw = PLAY.w / 2, ch = PLAY.h / 2, sh = 8.23 / 2, sv = 6.40;
       piso(R3(b, -W, -H, W, H), C.escape); piso(R3(b, -cw, -ch, cw, ch), C.court);
+      if (Q3D.on) return; // linhas, rede, alambrado e postes vêm do modelo em Three.js (q3dTenis)
       [[[-cw, -ch], [cw, -ch], [cw, ch], [-cw, ch], [-cw, -ch]], [[-cw, -sh], [cw, -sh]], [[-cw, sh], [cw, sh]], [[-sv, -sh], [-sv, sh]], [[sv, -sh], [sv, sh]], [[-sv, 0], [sv, 0]]]
         .forEach(p => linha(LN(b, p), C.line, 1.2));
       ext(R3(b, -0.04, -ch - .9, 0.04, ch + .9), '#1b1b1b', 0, 1.07);
@@ -193984,6 +194003,7 @@ function studyGeoJSON() {
     if (b.kind === 'infantil') {
       const cw = Math.min(7, W - .5), ch = Math.min(3.2, H - .4), sv = Math.min(3, cw - .5);
       piso(R3(b, -W, -H, W, H), '#5b9b4a'); piso(R3(b, -cw, -ch, cw, ch), '#ef7d3c');
+      if (Q3D.on) return; // detalhes no modelo em Three.js (q3dInfantil)
       [[[-cw, -ch], [cw, -ch], [cw, ch], [-cw, ch], [-cw, -ch]], [[-sv, -ch], [-sv, ch]], [[sv, -ch], [sv, ch]], [[-sv, 0], [sv, 0]]].forEach(p => linha(LN(b, p), '#ffffff', 1.2));
       ext(R3(b, -0.03, -ch - .4, 0.03, ch + .4), '#1b1b1b', 0, 0.8);
       [[-W, -H, W, -H + .05], [-W, H - .05, W, H], [-W, -H, -W + .05, H], [W - .05, -H, W, H]].forEach(r => ext(R3(b, ...r), '#3a4148', 0, 2, true));
@@ -193992,6 +194012,7 @@ function studyGeoJSON() {
     if (b.kind === 'padel') { // grama, linhas, rede, vidro nos fundos e tela nas laterais
       const cw = 10, ch = 5, sv = 6.95;
       piso(R3(b, -W, -H, W, H), '#33414d'); piso(R3(b, -cw, -ch, cw, ch), '#2a6db5');
+      if (Q3D.on) return; // detalhes no modelo em Three.js (q3dPadel)
       [[[-sv, -ch], [-sv, ch]], [[sv, -ch], [sv, ch]], [[-sv, 0], [sv, 0]]].forEach(p => linha(LN(b, p), '#ffffff', 1.2));
       ext(R3(b, -0.04, -ch, 0.04, ch), '#1b1b1b', 0, 0.88);
       [[-cw, -ch, -cw + .1, ch], [cw - .1, -ch, cw, ch], [-cw, -ch, -cw + 2, -ch + .1], [-cw, ch - .1, -cw + 2, ch], [cw - 2, -ch, cw, -ch + .1], [cw - 2, ch - .1, cw, ch]]
@@ -194059,15 +194080,18 @@ function studyGeoJSON() {
 function luz3D() {
   if (!map3d) return;
   let az = 210, alt = 45;
-  try { const c = solCenter(), s = sunPos(solDate(), c.lat, c.lng); if (s.alt > 5) { az = s.az; alt = s.alt; } } catch (e) {}
+  let noite = false;
+  try { const c = solCenter(), s = sunPos(solDate(), c.lat, c.lng); if (s.alt > 5) { az = s.az; alt = s.alt; } else noite = solOn && s.alt <= .5; } catch (e) {}
   map3d.setLight({anchor: 'map', color: '#ffffff', intensity: .45, position: [1.4, az, 90 - alt]});
+  Q3D.sol = {az, alt, noite}; Q3D.sombraSuja = true; // o mesmo sol ilumina e projeta as sombras do modelo das quadras
 }
 async function open3D() {
   if (!window.maplibregl) {
     msg('Carregando a vista 3D…');
-    loadCss('https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css');
-    try { await loadScript('https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js'); } catch (e) { msg('Não foi possível carregar a vista 3D. Verifique a conexão.'); return; }
+    loadCss('https://unpkg.com/maplibre-gl@5.24.1/dist/maplibre-gl.css');
+    try { await loadScript('https://unpkg.com/maplibre-gl@5.24.1/dist/maplibre-gl.js'); } catch (e) { msg('Não foi possível carregar a vista 3D. Verifique a conexão.'); return; }
   }
+  await q3dCarrega(); // Three.js para o modelo das quadras; se não carregar, o 3D segue com os volumes simples
   registraDem3D();
   if (lot) { try { await terrCompute(); } catch (e) {} }
   $('map3d').hidden = false; document.body.classList.add('v3d');
@@ -194075,8 +194099,10 @@ async function open3D() {
   if (!map3d) {
     map3d = new maplibregl.Map({
       container: 'map3d-canvas', center: c, zoom: map.getZoom() - 1, pitch: 60, bearing: -20, maxPitch: 80, attributionControl: {compact: true},
+      maxZoom: 24, canvasContextAttributes: {antialias: true}, // zoom alto para a câmera no chão; antialias para postes e linhas finas
       style: {
         version: 8,
+        sky: {'sky-color': '#8fbbe6', 'horizon-color': '#e6eef4', 'fog-color': '#e2e9ee', 'sky-horizon-blend': .7, 'horizon-fog-blend': .8, 'fog-ground-blend': .9, 'atmosphere-blend': 0},
         sources: {
           sat: {type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], tileSize: 256, maxzoom: 19, attribution: 'Esri, Maxar, Earthstar Geographics'},
           dem: {type: 'raster-dem', tiles: ['implanta://{z}/{x}/{y}?v=0'], encoding: 'terrarium', tileSize: 256, maxzoom: 17, attribution: 'AWS Terrain Tiles'},
@@ -194088,7 +194114,9 @@ async function open3D() {
           {id: 'sat', type: 'raster', source: 'sat'},
           {id: 'predios', type: 'fill-extrusion', source: 'ofm', 'source-layer': 'building', minzoom: 14, filter: filtroPredios(c),
            paint: {'fill-extrusion-color': '#d8d3cb', 'fill-extrusion-height': ['coalesce', ['get', 'render_height'], 6], 'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], 0], 'fill-extrusion-opacity': .82}},
+          {id: 'terreno', type: 'fill', source: 'estudo', filter: ['==', ['get', 't'], 'terreno'], layout: {visibility: 'none'}, paint: {'fill-color': '#7c9a5c'}},
           {id: 'piso', type: 'fill', source: 'estudo', filter: ['==', ['get', 't'], 'piso'], paint: {'fill-color': ['get', 'col'], 'fill-opacity': .96}},
+          {id: 'grao', type: 'fill', source: 'estudo', filter: ['==', ['get', 't'], 'entorno'], layout: {visibility: 'none'}, paint: {'fill-pattern': 'grao', 'fill-opacity': .5}},
           {id: 'linhas', type: 'line', source: 'estudo', filter: ['==', ['get', 't'], 'linha'], paint: {'line-color': ['get', 'col'], 'line-width': ['interpolate', ['linear'], ['zoom'], 16, .6, 20, 2.2]}},
           {id: 'sombra', type: 'fill', source: 'sombras', paint: {'fill-color': '#08121c', 'fill-opacity': ['get', 'op']}},
           {id: 'lote', type: 'line', source: 'estudo', filter: ['==', ['get', 't'], 'lote'], paint: {'line-color': '#ffeb3b', 'line-width': 3}},
@@ -194102,8 +194130,10 @@ async function open3D() {
       }
     });
     map3d.addControl(new maplibregl.NavigationControl({visualizePitch: true}), 'top-right');
-    map3d.on('load', () => { luz3D(); medPrepara(); aplicaCamadas3D(); if (solOn) drawSun(); });
+    map3d.on('load', () => { map3d.addImage('grao', graoChao()); luz3D(); medPrepara(); q3dCamada(); aplicaCamadas3D(); if (solOn) drawSun(); });
+    map3d.on('resize', () => { if (WALK.on) walkFov(); });
   } else {
+    if (map3d.isStyleLoaded()) q3dCamada();
     map3d.getSource('estudo').setData(studyGeoJSON()); atualizaDem3D();
     map3d.setFilter('predios', filtroPredios(c));
     map3d.jumpTo({center: c, zoom: map.getZoom() - 1});
@@ -194121,15 +194151,16 @@ function filtroPredios(c) {
 }
 function atualizaPredios3D() { if (!map3d) return; const c = lot ? turf.centroid(lot.feat).geometry.coordinates : [map.getCenter().lng, map.getCenter().lat]; map3d.setFilter('predios', filtroPredios(c)); }
 function sync3DSol(leve, forte) {
+  Q3D.estudo = solVisible() && (leve || forte) ? {leve, forte} : null; Q3D.estudoSujo = true; // as mesmas sombras vão por cima do piso das quadras em Three.js
   if (!map3d || !map3d.getSource('sombras')) return;
   const F = [];
   [[leve, .18], [forte, .42]].forEach(([g, op]) => { if (g) F.push({type: 'Feature', properties: {op}, geometry: g.geometry}); });
   map3d.getSource('sombras').setData({type: 'FeatureCollection', features: solVisible() ? F : []}); luz3D();
 }
 $('v3d-sol').onclick = () => { setSol(!solOn); $('v3d-sol').classList.toggle('on-sol', solOn); };
-function close3D() { if (MED.on) medToggle(false); $('v3d-cam').hidden = true; $('map3d').hidden = true; document.body.classList.remove('v3d'); }
+function close3D() { if (WALK.on) walkSai(); if (MED.on) medToggle(false); $('v3d-cam').hidden = true; $('map3d').hidden = true; document.body.classList.remove('v3d'); }
 // ---------- Ferramentas do 3D: camadas, medir e imagem ----------
-const CAM3D = {proj: true, arvore: true, viz: true, entorno: true, sombra: true, relevo: true};
+const CAM3D = {proj: true, arvore: true, viz: true, entorno: true, sombra: true, relevo: true, chao: true};
 const FILTRO3D = {piso: ['==', ['get', 't'], 'piso'], linhas: ['==', ['get', 't'], 'linha'], ext: ['==', ['get', 't'], 'ext'], vidro: ['==', ['get', 't'], 'vidro']};
 function aplicaCamadas3D() {
   if (!map3d || !map3d.getLayer('ext')) return;
@@ -194137,7 +194168,9 @@ function aplicaCamadas3D() {
   Object.entries(FILTRO3D).forEach(([id, f]) => map3d.setFilter(id, ocultos.length ? ['all', f, ['!', ['in', ['get', 'g'], ['literal', ocultos]]]] : f));
   map3d.setLayoutProperty('predios', 'visibility', CAM3D.entorno ? 'visible' : 'none');
   map3d.setLayoutProperty('sombra', 'visibility', CAM3D.sombra ? 'visible' : 'none');
+  chao3D();
   map3d.setTerrain(CAM3D.relevo ? {source: 'dem', exaggeration: +$('v3d-exag').value} : null);
+  Q3D.dirty = true; map3d.triggerRepaint(); // o modelo das quadras segue as mesmas camadas
 }
 document.querySelectorAll('#v3d-cam input[data-c]').forEach(i => i.onchange = () => { CAM3D[i.dataset.c] = i.checked; aplicaCamadas3D(); });
 $('v3d-cam-btn').onclick = () => { $('v3d-cam').hidden = !$('v3d-cam').hidden; };
@@ -194205,6 +194238,430 @@ function imagem3D() {
   map3d.triggerRepaint();
 }
 $('v3d-img').onclick = imagem3D;
+
+// ---------- Chão da caminhada ----------
+// A foto de satélite tem uns 30 cm por pixel: vista a 1,60 m do chão vira um borrão. Na caminhada o lote ganha um chão
+// limpo (gramado) e, até 150 m em volta, uma textura de grão por cima do satélite dá definição ao que está perto.
+function graoChao() {
+  const n = 512, d = new Uint8ClampedArray(n * n * 4);
+  // ruído suave que se repete nas bordas, em dois tamanhos de mancha (manchas grandes deixariam a repetição visível)
+  const ruido = m => {
+    const g = Float32Array.from({length: m * m}, () => Math.random() * 2 - 1);
+    return (x, y) => { const fx = x * m / n, fy = y * m / n, x0 = Math.floor(fx) % m, y0 = Math.floor(fy) % m, x1 = (x0 + 1) % m, y1 = (y0 + 1) % m, tx = fx - Math.floor(fx), ty = fy - Math.floor(fy);
+      return (g[y0 * m + x0] * (1 - tx) + g[y0 * m + x1] * tx) * (1 - ty) + (g[y1 * m + x0] * (1 - tx) + g[y1 * m + x1] * tx) * ty; };
+  };
+  const fino = ruido(512), medio = ruido(170);
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+    const v = Math.max(-1, Math.min(1, fino(x, y) * .7 + medio(x, y) * .55)), i = (y * n + x) * 4;
+    d[i] = d[i + 1] = d[i + 2] = v > 0 ? 255 : 0; d[i + 3] = Math.abs(v) * 150; // pontos claros e escuros, meio transparentes
+  }
+  return {width: n, height: n, data: d};
+}
+function chao3D() {
+  if (!map3d || !map3d.getLayer('terreno')) return;
+  const v = WALK.on && CAM3D.chao ? 'visible' : 'none';
+  map3d.setLayoutProperty('terreno', 'visibility', v); map3d.setLayoutProperty('grao', 'visibility', v);
+}
+
+// ---------- Quadras modeladas em Three.js (camada própria dentro do mapa 3D) ----------
+// As medidas são as mesmas do desenho 2D (PLAY, COURT_COLORS e os blocos). O modelo de cada quadra fica em metros no
+// referencial do bloco: X no comprimento, Y para cima e Z na largura. A laje fica 5 cm acima do terreno da plataforma.
+const Q3D = {on: false, erro: false, T: null, dirty: true, sombraSuja: true, estudo: null, estudoSujo: false, sol: {az: 210, alt: 45, noite: false}, org: null, emMetros: null, itens: [], mats: {}, geo: {}, E: .05, raio: 30, centro: [0, 0, 0]};
+const THREE_URL = 'https://unpkg.com/three@0.183.0/build/three.module.min.js';
+async function q3dCarrega() {
+  if (Q3D.erro) return false;
+  if (Q3D.T) return true;
+  try { Q3D.T = await import(THREE_URL); Q3D.on = true; } catch (e) { Q3D.on = false; }
+  return Q3D.on;
+}
+// Se o Three.js falhar em algum aparelho, o 3D volta para as quadras simples de antes
+function q3dFalha(e) {
+  if (Q3D.erro) return;
+  Q3D.erro = true; Q3D.on = false; console.error('Quadras 3D', e);
+  setTimeout(() => { try { if (map3d.getLayer('quadras3d')) map3d.removeLayer('quadras3d'); map3d.getSource('estudo').setData(studyGeoJSON()); } catch (x) {} }, 0);
+}
+// Textura só de transparência: losangos do alambrado ou malha quadrada da rede. A cor vem do material.
+function q3dTextura(tipo) {
+  const T = Q3D.T, n = 64, d = new Uint8Array(n * n * 4), meio = tipo === 'tela' ? 2.2 : 4.5; // meia espessura do fio, em pixels
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+    let dist;
+    if (tipo === 'tela') { const a = ((x - y) % n + n) % n, b = (x + y) % n; dist = Math.min(a, n - a, b, n - b) * Math.SQRT1_2; }
+    else dist = Math.min(x, n - x, y, n - y);
+    const i = (y * n + x) * 4; d[i] = d[i + 1] = d[i + 2] = 255; d[i + 3] = Math.round(255 * Math.max(0, Math.min(1, meio - dist + .5)));
+  }
+  const t = new T.DataTexture(d, n, n, T.RGBAFormat);
+  t.wrapS = t.wrapT = T.RepeatWrapping; t.magFilter = T.LinearFilter; t.minFilter = T.LinearMipmapLinearFilter; t.generateMipmaps = true;
+  t.anisotropy = Q3D.rend.capabilities.getMaxAnisotropy(); t.needsUpdate = true;
+  return t;
+}
+// Materiais por cor e tipo. Piso, linha, luz, vidro, tela e rede não projetam sombra; o resto (aço, postes) projeta.
+// "sombra.18" e "sombra.42" são as manchas do estudo de insolação, com a mesma opacidade usada no mapa.
+function q3dMat(cor, tipo) {
+  const T = Q3D.T, k = cor + '|' + (tipo || '');
+  if (Q3D.mats[k]) return Q3D.mats[k];
+  const m = tipo === 'luz' ? new T.MeshBasicMaterial({color: cor})
+    : tipo && tipo.startsWith('sombra') ? new T.MeshBasicMaterial({color: cor, transparent: true, opacity: +tipo.slice(6), side: T.DoubleSide, depthWrite: false})
+    : tipo === 'vidro' ? new T.MeshLambertMaterial({color: cor, transparent: true, opacity: .3, side: T.DoubleSide, depthWrite: false})
+    : tipo === 'tela' || tipo === 'rede' ? new T.MeshLambertMaterial({color: cor, map: q3dTextura(tipo), transparent: true, side: T.DoubleSide, depthWrite: false})
+    : new T.MeshLambertMaterial({color: cor});
+  if (tipo === 'linha') { m.polygonOffset = true; m.polygonOffsetFactor = -2; m.polygonOffsetUnits = -2; }
+  if (tipo && tipo.startsWith('sombra')) { m.polygonOffset = true; m.polygonOffsetFactor = -4; m.polygonOffsetUnits = -4; }
+  m.userData.semSombra = !!tipo;
+  return Q3D.mats[k] = m;
+}
+// Junta caixas e tubos por material e desenha cada grupo de uma vez (instâncias)
+function q3dLote() {
+  const T = Q3D.T, grupos = new Map(), q = new T.Quaternion(), eu = new T.Euler(), Y = new T.Vector3(0, 1, 0), d = new T.Vector3();
+  const add = (geo, mat, pos, esc) => { const k = geo + '|' + mat.uuid; let r = grupos.get(k); if (!r) grupos.set(k, r = {geo, mat, ms: []}); r.ms.push(new T.Matrix4().compose(pos, q, esc)); };
+  const eixo = (a, b) => { d.set(b[0] - a[0], b[1] - a[1], b[2] - a[2]); const len = d.length(); q.setFromUnitVectors(Y, d.normalize()); return [new T.Vector3((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2), len]; };
+  return {
+    // caixa pelo centro, com giro opcional em torno do eixo X (radianos)
+    caixa(mat, x, y, z, sx, sy, sz, rx) { q.setFromEuler(eu.set(rx || 0, 0, 0)); add('caixa', mat, new T.Vector3(x, y, z), new T.Vector3(sx, sy, sz)); },
+    // tubo redondo entre dois pontos
+    tubo(mat, a, b, r) { const [p, len] = eixo(a, b); add('tubo', mat, p, new T.Vector3(r, len, r)); },
+    // barra de seção retangular entre dois pontos
+    barra(mat, a, b, larg, alt) { const [p, len] = eixo(a, b); add('caixa', mat, p, new T.Vector3(larg, len, alt)); },
+    monta(g) {
+      grupos.forEach(r => {
+        const im = new T.InstancedMesh(Q3D.geo[r.geo], r.mat, r.ms.length);
+        r.ms.forEach((m, i) => im.setMatrixAt(i, m));
+        im.castShadow = !r.mat.userData.semSombra; im.receiveShadow = true; g.add(im);
+      });
+    }
+  };
+}
+// Faixa vertical que passa por pontos [x, z, base, topo]: tela, vidro ou rede, com a textura repetida a cada "passo" metros
+function q3dFaixa(mat, pts, passo) {
+  const T = Q3D.T, pos = [], uv = [], idx = []; let u = 0;
+  pts.forEach((p, i) => {
+    if (i) u += Math.hypot(p[0] - pts[i - 1][0], p[1] - pts[i - 1][1]);
+    pos.push(p[0], p[2], p[1], p[0], p[3], p[1]); uv.push(u / passo, p[2] / passo, u / passo, p[3] / passo);
+    if (i) { const a = (i - 1) * 2; idx.push(a, a + 2, a + 1, a + 1, a + 2, a + 3); }
+  });
+  const g = new T.BufferGeometry();
+  g.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new T.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals();
+  const m = new T.Mesh(g, mat); m.receiveShadow = true;
+  return m;
+}
+// Laje do escape (desce 1,2 m para não ficar solta em terreno inclinado) e área de jogo por cima
+function q3dPiso(L, b, corEscape, cw, ch, corJogo) {
+  const E = Q3D.E;
+  L.caixa(q3dMat(corEscape, 'piso'), 0, (E - 1.2) / 2, 0, b.w, E + 1.2, b.h);
+  L.caixa(q3dMat(corJogo, 'piso'), 0, E + .003, 0, cw * 2, .006, ch * 2);
+}
+// Linha pintada no piso, dada pelo retângulo que ocupa em planta
+function q3dLinha(L, cor, x0, z0, x1, z1) { L.caixa(q3dMat(cor, 'linha'), (x0 + x1) / 2, Q3D.E + .008, (z0 + z1) / 2, Math.abs(x1 - x0), .004, Math.abs(z1 - z0)); }
+// Rede: postes, malha, faixa branca no topo e, no tênis, a fita central que puxa o meio para baixo
+function q3dRede(L, g, zp, hPoste, hMeio, fita) {
+  const E = Q3D.E, poste = q3dMat('#22262a'), branco = q3dMat('#f5f5f2');
+  [-zp, zp].forEach(z => L.tubo(poste, [0, E, z], [0, E + hPoste + .03, z], .04));
+  g.add(q3dFaixa(q3dMat('#1b1b1b', 'rede'), [[0, -zp, E + .03, E + hPoste], [0, 0, E + .03, E + hMeio], [0, zp, E + .03, E + hPoste]], .045));
+  L.barra(branco, [0, E + hPoste - .03, -zp], [0, E + hMeio - .03, 0], .02, .06); L.barra(branco, [0, E + hMeio - .03, 0], [0, E + hPoste - .03, zp], .02, .06);
+  if (fita) L.caixa(branco, 0, E + hMeio / 2, 0, .022, hMeio, .05);
+}
+// Alambrado em volta do retângulo ±W × ±H: montantes a cada ~3 m, travessas em cima e embaixo e a tela
+function q3dCerca(L, g, W, H, alt) {
+  const E = Q3D.E, aco = q3dMat('#3a4148'), tela = q3dMat('#4d565e', 'tela'), P = [[-W, -H], [W, -H], [W, H], [-W, H]];
+  for (let i = 0; i < 4; i++) {
+    const [x0, z0] = P[i], [x1, z1] = P[(i + 1) % 4], n = Math.max(1, Math.round(Math.hypot(x1 - x0, z1 - z0) / 3));
+    for (let k = 0; k < n; k++) { const x = x0 + (x1 - x0) * k / n, z = z0 + (z1 - z0) * k / n; L.tubo(aco, [x, E, z], [x, E + alt, z], k ? .03 : .045); }
+    L.tubo(aco, [x0, E + alt, z0], [x1, E + alt, z1], .025); L.tubo(aco, [x0, E + .08, z0], [x1, E + .08, z1], .02);
+    g.add(q3dFaixa(tela, [[x0, z0, E + .08, E + alt], [x1, z1, E + .08, E + alt]], .085));
+  }
+}
+// Tênis (rápida e saibro): linhas com a largura real, rede de 1,07 m nos postes e 0,914 m no centro, alambrado de 3,6 m
+// e a iluminação do orçamento: 4 postes de 8 m com cruzeta e 4 refletores cada (16 por quadra)
+function q3dTenis(b, L, g) {
+  const C = COURT_COLORS[b.kind], W = b.w / 2, H = b.h / 2, cw = PLAY.w / 2, ch = PLAY.h / 2, sh = 8.23 / 2, sv = 6.40, lw = .05, E = Q3D.E;
+  q3dPiso(L, b, C.escape, cw, ch, C.court);
+  const ln = (x0, z0, x1, z1) => q3dLinha(L, C.line, x0, z0, x1, z1);
+  ln(-cw, -ch, -cw + .1, ch); ln(cw - .1, -ch, cw, ch); // linhas de fundo (10 cm)
+  ln(-cw, -ch, cw, -ch + lw); ln(-cw, ch - lw, cw, ch); // laterais de duplas
+  ln(-cw, -sh, cw, -sh + lw); ln(-cw, sh - lw, cw, sh); // laterais de simples
+  ln(-sv - lw / 2, -sh, -sv + lw / 2, sh); ln(sv - lw / 2, -sh, sv + lw / 2, sh); // linhas de saque
+  ln(-sv, -lw / 2, sv, lw / 2); // linha central de saque
+  ln(-cw + .1, -lw / 2, -cw + .2, lw / 2); ln(cw - .2, -lw / 2, cw - .1, lw / 2); // marcas centrais
+  q3dRede(L, g, ch + .914, 1.07, .914, true);
+  q3dCerca(L, g, W - .05, H - .05, 3.6);
+  const aco = q3dMat('#3a4148'), corpo = q3dMat('#22262a'), lente = q3dMat('#fff6d0', 'luz'), hp = 8;
+  [[-9, -1], [9, -1], [-9, 1], [9, 1]].forEach(([x, s]) => {
+    const z = s * (H - .4), incl = s * .65; // refletores inclinados para dentro da quadra
+    L.tubo(aco, [x, E, z], [x, E + hp, z], .07);
+    L.tubo(aco, [x - 1, E + hp - .12, z], [x + 1, E + hp - .12, z], .04);
+    [-.75, -.25, .25, .75].forEach(dx => {
+      L.caixa(corpo, x + dx, E + hp - .3, z - s * .12, .36, .09, .28, incl);
+      L.caixa(lente, x + dx, E + hp - .3 - Math.cos(incl) * .05, z - s * .12 - Math.sin(incl) * .05, .32, .012, .24, incl);
+    });
+  });
+}
+// Quadra infantil: mesmas proporções do desenho 2D, rede de 0,80 m e alambrado de 2 m
+function q3dInfantil(b, L, g) {
+  const W = b.w / 2, H = b.h / 2, cw = Math.min(7, W - .5), ch = Math.min(3.2, H - .4), sv = Math.min(3, cw - .5), lw = .05;
+  q3dPiso(L, b, '#5b9b4a', cw, ch, '#ef7d3c');
+  const ln = (x0, z0, x1, z1) => q3dLinha(L, '#ffffff', x0, z0, x1, z1);
+  ln(-cw, -ch, -cw + lw, ch); ln(cw - lw, -ch, cw, ch); ln(-cw, -ch, cw, -ch + lw); ln(-cw, ch - lw, cw, ch);
+  ln(-sv - lw / 2, -ch, -sv + lw / 2, ch); ln(sv - lw / 2, -ch, sv + lw / 2, ch); ln(-sv, -lw / 2, sv, lw / 2);
+  q3dRede(L, g, ch + .4, .8, .8, false);
+  q3dCerca(L, g, W - .05, H - .05, 2);
+}
+// Padel (20 × 10 m): vidro de 3 m nos fundos e nos 2 m iniciais das laterais, tela no restante e rede de 0,88 m
+function q3dPadel(b, L, g) {
+  const cw = 10, ch = 5, sv = 6.95, lw = .05, alt = 3, E = Q3D.E;
+  q3dPiso(L, b, '#33414d', cw, ch, '#2a6db5');
+  const ln = (x0, z0, x1, z1) => q3dLinha(L, '#ffffff', x0, z0, x1, z1);
+  ln(-sv - lw / 2, -ch, -sv + lw / 2, ch); ln(sv - lw / 2, -ch, sv + lw / 2, ch); ln(-sv, -lw / 2, sv, lw / 2);
+  q3dRede(L, g, ch, .88, .88, false);
+  const aco = q3dMat('#2b3036'), vidro = q3dMat('#bfe6ff', 'vidro'), tela = q3dMat('#4d565e', 'tela');
+  const montante = (x, z) => L.caixa(aco, x, E + alt / 2, z, .08, alt, .08);
+  [-cw, cw].forEach(x => {
+    for (let z = -ch; z <= ch + .01; z += 2) montante(x, z);
+    L.caixa(aco, x, E + alt, 0, .08, .08, ch * 2);
+    g.add(q3dFaixa(vidro, [[x, -ch, E + .05, E + alt], [x, ch, E + .05, E + alt]], 1));
+  });
+  [-ch, ch].forEach(z => {
+    [-cw + 2, -4, 0, 4, cw - 2].forEach(x => montante(x, z));
+    L.caixa(aco, 0, E + alt, z, cw * 2, .08, .08);
+    g.add(q3dFaixa(vidro, [[-cw, z, E + .05, E + alt], [-cw + 2, z, E + .05, E + alt]], 1));
+    g.add(q3dFaixa(vidro, [[cw - 2, z, E + .05, E + alt], [cw, z, E + .05, E + alt]], 1));
+    g.add(q3dFaixa(tela, [[-cw + 2, z, E + .05, E + alt], [cw - 2, z, E + .05, E + alt]], .085));
+  });
+}
+function q3dMonta() {
+  const T = Q3D.T, raiz = Q3D.raiz;
+  Q3D.dirty = false; Q3D.sombraSuja = true;
+  Q3D.itens.forEach(it => [it.g, it.gs].forEach(g => { raiz.remove(g); g.traverse(o => { if (o.isInstancedMesh) o.dispose(); else if (o.geometry) o.geometry.dispose(); }); }));
+  Q3D.itens = [];
+  if (LOD3D !== 'detalhe' || !CAM3D.proj) return;
+  const quadras = blocks.filter(b => TYPES[b.kind].court && vis[visKey(b.kind)]);
+  if (!quadras.length) return;
+  // origem da cena no meio das quadras; "cena" converte longitude e latitude em metros a leste e a norte dessa origem
+  const lng0 = quadras.reduce((s, b) => s + b.lng, 0) / quadras.length, lat0 = quadras.reduce((s, b) => s + b.lat, 0) / quadras.length;
+  const o = maplibregl.MercatorCoordinate.fromLngLat([lng0, lat0], 0), esc = o.meterInMercatorCoordinateUnits();
+  Q3D.org = {x: o.x, y: o.y, s: esc};
+  const cena = Q3D.emMetros = (lng, lat) => { const m = maplibregl.MercatorCoordinate.fromLngLat([lng, lat], 0); return [(m.x - o.x) / esc, (o.y - m.y) / esc]; };
+  let raio = 0;
+  quadras.forEach(b => {
+    // os eixos do bloco saem do mesmo toLL do desenho 2D, para o modelo cair exatamente sobre a pegada no mapa
+    const p0 = toLL(b, 0, 0), px = toLL(b, 1, 0), pz = toLL(b, 0, 1), a = cena(p0[1], p0[0]), ax = cena(px[1], px[0]), az = cena(pz[1], pz[0]);
+    const g = new T.Group(), gs = new T.Group(), L = q3dLote(); g.matrixAutoUpdate = gs.matrixAutoUpdate = false;
+    g.matrix.makeBasis(new T.Vector3(ax[0] - a[0], 0, ax[1] - a[1]), new T.Vector3(0, 1, 0), new T.Vector3(az[0] - a[0], 0, az[1] - a[1])).setPosition(a[0], 0, a[1]);
+    (b.kind === 'padel' ? q3dPadel : b.kind === 'infantil' ? q3dInfantil : q3dTenis)(b, L, g);
+    L.monta(g); raiz.add(g); raiz.add(gs);
+    Q3D.itens.push({b, g, gs, e: null}); // g = modelo da quadra; gs = sombras do estudo sobre o piso
+    raio = Math.max(raio, Math.hypot(a[0], a[1]) + Math.hypot(b.w, b.h) / 2);
+  });
+  Q3D.raio = raio + 2;
+  q3dEstudo();
+}
+// Sombras do estudo de insolação (leve: telas e vidros; forte: edificações, árvores e vizinhos) recortadas em cada quadra
+// e desenhadas logo acima do piso, porque o piso em Three.js cobre as sombras do mapa
+function q3dEstudo() {
+  const T = Q3D.T, pontos = anel => anel.slice(0, -1).map(p => { const q = Q3D.emMetros(p[0], p[1]); return new T.Vector2(q[0], -q[1]); });
+  Q3D.estudoSujo = false;
+  Q3D.itens.forEach(it => {
+    it.gs.children.slice().forEach(m => { it.gs.remove(m); m.geometry.dispose(); });
+    if (!Q3D.estudo || !CAM3D.sombra || !it.b.ring) return;
+    [[Q3D.estudo.leve, '.18'], [Q3D.estudo.forte, '.42']].forEach(([f, op]) => {
+      let x = null; try { x = f && turf.intersect(f, polyFeat(it.b.ring)); } catch (e) {}
+      if (!x) return;
+      (x.geometry.type === 'Polygon' ? [x.geometry.coordinates] : x.geometry.coordinates).forEach(aneis => {
+        const forma = new T.Shape(pontos(aneis[0])); aneis.slice(1).forEach(r => forma.holes.push(new T.Path(pontos(r))));
+        const geo = new T.ShapeGeometry(forma); geo.rotateX(-Math.PI / 2);
+        it.gs.add(new T.Mesh(geo, q3dMat('#08121c', 'sombra' + op)));
+      });
+    });
+  });
+}
+// Cada quadra fica na cota do terreno do 3D (que já inclui as plataformas e o exagero do relevo)
+function q3dCotas() {
+  let soma = 0;
+  Q3D.itens.forEach(it => {
+    const e = map3d.queryTerrainElevation([it.b.lng, it.b.lat]) || 0; soma += e;
+    if (it.e !== null && Math.abs(e - it.e) < .005) return;
+    it.e = e; it.g.matrix.elements[13] = e; it.gs.matrix.elements[13] = e + Q3D.E + .012;
+    it.g.matrixWorldNeedsUpdate = it.gs.matrixWorldNeedsUpdate = true; Q3D.sombraSuja = true;
+  });
+  Q3D.centro[1] = Q3D.itens.length ? soma / Q3D.itens.length : 0;
+}
+// Sol do estudo de insolação: ilumina o modelo e projeta as sombras (câmera de sombra cobrindo todas as quadras)
+function q3dSol() {
+  const rad = Math.PI / 180, a = Q3D.sol.az * rad, h = Q3D.sol.alt * rad, c = Q3D.centro, D = 200, k = Q3D.raio, luz = Q3D.solL, cam = luz.shadow.camera;
+  luz.position.set(c[0] + Math.sin(a) * Math.cos(h) * D, c[1] + Math.sin(h) * D, c[2] + Math.cos(a) * Math.cos(h) * D);
+  luz.target.position.set(c[0], c[1], c[2]);
+  cam.left = -k; cam.right = k; cam.top = k; cam.bottom = -k; cam.near = 1; cam.far = D * 2; cam.updateProjectionMatrix();
+  const lado = k > 45 ? 4096 : 2048;
+  if (luz.shadow.mapSize.x !== lado) { luz.shadow.mapSize.set(lado, lado); if (luz.shadow.map) { luz.shadow.map.dispose(); luz.shadow.map = null; } }
+  luz.castShadow = CAM3D.sombra && !Q3D.sol.noite;
+}
+function q3dDesenha(gl, args) {
+  const r = Q3D.rend;
+  if (Q3D.dirty) q3dMonta(); else if (Q3D.estudoSujo) q3dEstudo();
+  if (!Q3D.itens.length) return;
+  q3dCotas();
+  // a câmera é a do mapa: matriz do MapLibre × posição da origem da cena em coordenadas Mercator
+  const o = Q3D.org, faixa = gl.getParameter(gl.DEPTH_RANGE);
+  Q3D.cam.projectionMatrix.fromArray(args.defaultProjectionData.mainMatrix).multiply(Q3D.mL.makeTranslation(o.x, o.y, 0).scale(Q3D.v.set(o.s, -o.s, o.s)));
+  r.resetState(); r.setViewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+  if (Q3D.sombraSuja) { // o mapa de sombras só é refeito quando o sol, o modelo ou as cotas mudam
+    Q3D.sombraSuja = false; q3dSol();
+    gl.depthRange(0, 1); r.shadowMap.needsUpdate = true;
+    r.setRenderTarget(Q3D.rt); r.render(Q3D.cena, Q3D.cam); r.setRenderTarget(null);
+  }
+  gl.depthRange(faixa[0], faixa[1]);
+  r.render(Q3D.cena, Q3D.cam);
+}
+function q3dCamada() {
+  if (!Q3D.on || !map3d || map3d.getLayer('quadras3d')) return;
+  const T = Q3D.T;
+  try {
+    map3d.addLayer({id: 'quadras3d', type: 'custom', renderingMode: '3d',
+      onAdd(m, gl) {
+        Q3D.cam = new T.Camera(); Q3D.cena = new T.Scene();
+        // No Three.js o Y aponta para cima: a raiz gira e espelha a cena para X = leste, Y = altura e Z = norte
+        Q3D.raiz = new T.Group(); Q3D.raiz.rotation.x = Math.PI / 2; Q3D.raiz.scale.z = -1; Q3D.cena.add(Q3D.raiz);
+        Q3D.rend = new T.WebGLRenderer({canvas: m.getCanvas(), context: gl, antialias: true});
+        Q3D.rend.autoClear = false; Q3D.rend.shadowMap.enabled = true; Q3D.rend.shadowMap.type = T.PCFShadowMap; Q3D.rend.shadowMap.autoUpdate = false;
+        Q3D.rt = new T.WebGLRenderTarget(1, 1);
+        Q3D.geo = {caixa: new T.BoxGeometry(1, 1, 1), tubo: new T.CylinderGeometry(1, 1, 1, 10)};
+        Q3D.raiz.add(new T.HemisphereLight(0xe8f1fb, 0xb9ad98, 1.25));
+        Q3D.solL = new T.DirectionalLight(0xfff3dd, 2.4);
+        Q3D.solL.shadow.mapSize.set(2048, 2048); Q3D.solL.shadow.bias = -.0001; Q3D.solL.shadow.normalBias = .03; Q3D.solL.shadow.intensity = .75;
+        Q3D.raiz.add(Q3D.solL); Q3D.raiz.add(Q3D.solL.target);
+        Q3D.mL = new T.Matrix4(); Q3D.v = new T.Vector3();
+      },
+      render(gl, args) { try { q3dDesenha(gl, args); } catch (e) { q3dFalha(e); } }
+    });
+  } catch (e) { q3dFalha(e); }
+}
+
+// ---------- Caminhar: câmera na altura dos olhos, como no Street View ----------
+// A posição é guardada em longitude e latitude; "rumo" é para onde a pessoa olha (0 = norte, sentido horário) e
+// "olhar" é a inclinação da vista (positivo para cima). A cada quadro a câmera do mapa é recolocada a 1,60 m do chão.
+const WALK = {on: false, lng: 0, lat: 0, rumo: 0, olhar: 0, alt: null, elev: 0, fov: 60, teclas: new Set(), joy: [0, 0], raf: 0, t0: 0, antes: null, alvo: null, sujo: true};
+const WALK_OLHO = 1.6, WALK_VEL = 3.5, WALK_FRENTE = 10;
+const WALK_TECLAS = {KeyW: 1, KeyA: 1, KeyS: 1, KeyD: 1, KeyQ: 1, KeyE: 1, ArrowUp: 1, ArrowDown: 1, ArrowLeft: 1, ArrowRight: 1, ShiftLeft: 1, ShiftRight: 1};
+const WALK_DICA_3D = 'Arraste com o botão direito (ou dois dedos) para girar e inclinar.';
+// Campo de visão de uns 85° na horizontal, parecido com o do Street View (o padrão do mapa é bem mais fechado)
+function walkFov() {
+  const c = map3d.getCanvas(), asp = c.clientWidth / Math.max(1, c.clientHeight);
+  WALK.fov = Math.max(45, Math.min(75, 2 * Math.atan(Math.tan(42.5 * Math.PI / 180) / asp) * 180 / Math.PI));
+  map3d.setVerticalFieldOfView(WALK.fov); WALK.sujo = true;
+  $('walk-joy').style.bottom = (document.querySelector('.v3d-bar').offsetHeight + 30) + 'px'; // o controle fica logo acima da barra, em qualquer tela
+}
+function walkCam() {
+  const rad = Math.PI / 180, a = WALK.rumo * rad, o = WALK.olhar * rad, dh = WALK_FRENTE * Math.cos(o), h = WALK.alt + WALK_OLHO;
+  const de = new maplibregl.LngLat(WALK.lng, WALK.lat);
+  const para = new maplibregl.LngLat(WALK.lng + Math.sin(a) * dh / (R * Math.cos(WALK.lat * rad)), WALK.lat + Math.cos(a) * dh / R);
+  const op = map3d.calculateCameraOptionsFromTo(de, h, para, h + WALK_FRENTE * Math.sin(o));
+  WALK.elev = op.elevation; map3d.jumpTo(op);
+}
+function walkMove(leste, norte) { WALK.lat += norte / R; WALK.lng += leste / (R * Math.cos(WALK.lat * Math.PI / 180)); WALK.sujo = true; }
+function walkLoop(agora) {
+  if (!WALK.on) return;
+  const dt = Math.min(.05, (agora - WALK.t0) / 1000), T = WALK.teclas; WALK.t0 = agora;
+  const frente = (T.has('KeyW') || T.has('ArrowUp') ? 1 : 0) - (T.has('KeyS') || T.has('ArrowDown') ? 1 : 0) - WALK.joy[1];
+  const lado = (T.has('KeyD') ? 1 : 0) - (T.has('KeyA') ? 1 : 0);
+  const giro = (T.has('ArrowRight') || T.has('KeyE') ? 1 : 0) - (T.has('ArrowLeft') || T.has('KeyQ') ? 1 : 0) + WALK.joy[0];
+  if (giro) { WALK.rumo += giro * 75 * dt; WALK.sujo = true; }
+  if (frente || lado) {
+    const a = WALK.rumo * Math.PI / 180, v = WALK_VEL * (T.has('ShiftLeft') || T.has('ShiftRight') ? 2.4 : 1) * dt;
+    walkMove((Math.sin(a) * frente + Math.cos(a) * lado) * v, (Math.cos(a) * frente - Math.sin(a) * lado) * v); WALK.alvo = null;
+  } else if (WALK.alvo) { // deslocamento suave até o ponto tocado
+    const A = WALK.alvo; A.t = Math.min(1, A.t + dt / A.dur);
+    const k = A.t * A.t * (3 - 2 * A.t);
+    WALK.lng = A.lng0 + (A.lng1 - A.lng0) * k; WALK.lat = A.lat0 + (A.lat1 - A.lat0) * k; WALK.sujo = true;
+    if (A.t >= 1) WALK.alvo = null;
+  }
+  // os olhos acompanham o relevo aos poucos, sem degraus
+  const chao = map3d.queryTerrainElevation([WALK.lng, WALK.lat]) || 0;
+  if (WALK.alt === null) { WALK.alt = chao; WALK.sujo = true; }
+  else if (Math.abs(chao - WALK.alt) > 3) { WALK.alt = chao; WALK.sujo = true; } // salto grande (relevo ligado ou desligado): sem transição
+  else if (Math.abs(chao - WALK.alt) > .01) { WALK.alt += (chao - WALK.alt) * Math.min(1, dt * 8); WALK.sujo = true; }
+  // quando o relevo é refeito (camadas, exagero, novos dados) o mapa recoloca o centro da vista no chão e a câmera
+  // afunda no terreno; se a cota do centro não é mais a que foi pedida, a câmera é reposta
+  if (Math.abs(map3d.getCenterElevation() - WALK.elev) > .02) WALK.sujo = true;
+  if (WALK.sujo) { WALK.sujo = false; walkCam(); }
+  WALK.raf = requestAnimationFrame(walkLoop);
+}
+// Toque no chão: vai até o ponto (no máximo 60 m por vez), como o clique do Street View
+function walkIr(x, y) {
+  const rad = Math.PI / 180, h = map3d.getCanvas().clientHeight;
+  const horizonte = h / 2 + Math.tan(WALK.olhar * rad) * (h / 2) / Math.tan(WALK.fov * rad / 2);
+  if (y < horizonte + 12) return; // acima do horizonte não há chão
+  let ll = null; try { ll = map3d.unproject([x, y]); } catch (e) {}
+  if (!ll || !isFinite(ll.lng) || !isFinite(ll.lat)) return;
+  const d = Math.hypot((ll.lng - WALK.lng) * R * Math.cos(WALK.lat * rad), (ll.lat - WALK.lat) * R);
+  if (d < .5) return;
+  const k = Math.min(1, 60 / d);
+  WALK.alvo = {lng0: WALK.lng, lat0: WALK.lat, lng1: WALK.lng + (ll.lng - WALK.lng) * k, lat1: WALK.lat + (ll.lat - WALK.lat) * k, t: 0, dur: Math.max(.5, Math.min(2.4, d * k / 9))};
+}
+function walkEntra() {
+  if (!map3d || WALK.on) return;
+  if (MED.on) medToggle(false);
+  $('v3d-cam').hidden = true;
+  WALK.antes = {center: map3d.getCenter(), zoom: map3d.getZoom(), pitch: map3d.getPitch(), bearing: map3d.getBearing(), fov: map3d.getVerticalFieldOfView()};
+  // ponto de partida: fora do canto da quadra mais próxima do centro da vista, olhando para ela; sem quadra, o centro da vista
+  const c = map3d.getCenter(), dist = b => map.distance([b.lat, b.lng], [c.lat, c.lng]);
+  const q = blocks.filter(b => TYPES[b.kind].court && vis[visKey(b.kind)]).sort((a, b) => dist(a) - dist(b))[0];
+  if (q) {
+    const p = toLL(q, -(q.w / 2 + 4), -(q.h / 2 + 3)); WALK.lat = p[0]; WALK.lng = p[1];
+    WALK.rumo = Math.atan2((q.lng - p[1]) * Math.cos(q.lat * Math.PI / 180), q.lat - p[0]) * 180 / Math.PI;
+  } else { WALK.lat = c.lat; WALK.lng = c.lng; WALK.rumo = map3d.getBearing(); }
+  WALK.olhar = -4; WALK.alt = null; WALK.alvo = null; WALK.teclas.clear(); WALK.joy = [0, 0]; WALK.on = true;
+  document.body.classList.add('walk'); $('walk-pad').hidden = false; $('walk-joy').hidden = false;
+  $('v3d-walk').classList.add('on-sol'); $('v3d-walk').textContent = '✕ Sair da caminhada';
+  $('v3d-dica').textContent = temHover ? 'Arraste para olhar em volta e clique no chão para ir até o ponto. Teclas W A S D ou setas para andar, Esc para sair.' : 'Arraste para olhar em volta e toque no chão para ir até o ponto. O controle à direita anda e vira.';
+  map3d.stop(); map3d.setCenterClampedToGround(false); map3d.setMaxPitch(150); walkFov(); chao3D();
+  WALK.t0 = performance.now(); WALK.raf = requestAnimationFrame(walkLoop);
+}
+function walkSai() {
+  if (!WALK.on) return;
+  WALK.on = false; cancelAnimationFrame(WALK.raf); WALK.teclas.clear(); WALK.joy = [0, 0];
+  document.body.classList.remove('walk'); $('walk-pad').hidden = true; $('walk-joy').hidden = true;
+  $('v3d-walk').classList.remove('on-sol'); $('v3d-walk').textContent = '🚶 Caminhar'; $('v3d-dica').textContent = WALK_DICA_3D;
+  chao3D();
+  // volta para a vista de maquete em que a pessoa estava
+  const A = WALK.antes;
+  map3d.setVerticalFieldOfView(A.fov); map3d.jumpTo({pitch: Math.min(A.pitch, 80)}); map3d.setMaxPitch(80); map3d.setCenterClampedToGround(true);
+  map3d.jumpTo({center: A.center, zoom: A.zoom, pitch: A.pitch, bearing: A.bearing});
+}
+(() => {
+  const pad = $('walk-pad'), joy = $('walk-joy'), pino = joy.firstElementChild; let P = null;
+  // arrastar gira a vista como quem puxa a paisagem; toque curto sem arrastar vai até o ponto
+  pad.addEventListener('pointerdown', e => { try { pad.setPointerCapture(e.pointerId); } catch (x) {} P = {id: e.pointerId, x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, t: performance.now(), moveu: false}; });
+  pad.addEventListener('pointermove', e => {
+    if (!P || e.pointerId !== P.id) return;
+    if (!P.moveu && Math.hypot(e.clientX - P.x0, e.clientY - P.y0) > 6) P.moveu = true;
+    if (P.moveu) { const k = WALK.fov / Math.max(1, pad.clientHeight); WALK.rumo -= (e.clientX - P.x) * k; WALK.olhar = Math.max(-40, Math.min(55, WALK.olhar + (e.clientY - P.y) * k)); WALK.sujo = true; }
+    P.x = e.clientX; P.y = e.clientY;
+  });
+  const solta = e => {
+    if (!P || e.pointerId !== P.id) return;
+    const toque = e.type === 'pointerup' && !P.moveu && performance.now() - P.t < 450; P = null;
+    if (toque) { const r = pad.getBoundingClientRect(); walkIr(e.clientX - r.left, e.clientY - r.top); }
+  };
+  pad.addEventListener('pointerup', solta); pad.addEventListener('pointercancel', solta);
+  pad.addEventListener('wheel', e => { e.preventDefault(); const a = WALK.rumo * Math.PI / 180, d = e.deltaY < 0 ? 2 : -2; walkMove(Math.sin(a) * d, Math.cos(a) * d); WALK.alvo = null; }, {passive: false});
+  // controle: para cima e para baixo anda, para os lados vira
+  const mexe = e => {
+    const r = joy.getBoundingClientRect(), raio = r.width / 2; let x = (e.clientX - r.left - raio) / raio, y = (e.clientY - r.top - raio) / raio;
+    const m = Math.hypot(x, y); if (m > 1) { x /= m; y /= m; }
+    WALK.joy = [Math.abs(x) < .15 ? 0 : x, Math.abs(y) < .15 ? 0 : y]; pino.style.transform = `translate(${x * 34}px,${y * 34}px)`;
+  };
+  const para = e => { if (joy.dataset.id !== String(e.pointerId)) return; delete joy.dataset.id; WALK.joy = [0, 0]; pino.style.transform = ''; };
+  joy.addEventListener('pointerdown', e => { try { joy.setPointerCapture(e.pointerId); } catch (x) {} joy.dataset.id = e.pointerId; mexe(e); });
+  joy.addEventListener('pointermove', e => { if (joy.dataset.id === String(e.pointerId)) mexe(e); });
+  joy.addEventListener('pointerup', para); joy.addEventListener('pointercancel', para);
+  addEventListener('keydown', e => {
+    if (!WALK.on || /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
+    if (e.key === 'Escape') { walkSai(); return; }
+    if (WALK_TECLAS[e.code] && !e.ctrlKey && !e.metaKey) { WALK.teclas.add(e.code); if (e.code.startsWith('Arrow')) e.preventDefault(); }
+  });
+  addEventListener('keyup', e => WALK.teclas.delete(e.code));
+  addEventListener('blur', () => WALK.teclas.clear());
+  $('v3d-walk').onclick = () => { if (WALK.on) walkSai(); else walkEntra(); };
+})();
+
 // Redesenha o terreno e o 3D pouco depois de cada mudança (sem pesar durante o arraste)
 let terrT = null;
 function terrRefresh() {
