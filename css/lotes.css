@@ -1,0 +1,16 @@
+/* Lotes do cadastro da prefeitura */
+/* Lotes do cadastro */
+.fmt-row{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:14px;color:var(--ink);margin:0}
+.fmt-row input{width:20px;height:20px}
+.lt-sum{display:grid;grid-template-columns:auto 1fr auto;gap:3px 8px;align-items:center;font-size:13px;color:var(--ink);margin-top:10px}
+.lt-list{margin-top:8px;border-top:1px solid var(--line);max-height:220px;overflow:auto}
+.lt-list button{display:flex;width:100%;gap:8px;align-items:center;border:none;border-bottom:1px solid var(--line);background:none;padding:8px 2px;font-size:13px;text-align:left;cursor:pointer;color:var(--ink)}
+.lt-list small{color:var(--muted)}
+#lotcard{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);padding:10px 14px;z-index:1001;width:min(520px,calc(100vw - 24px));font-size:13px;line-height:1.45}
+#lotcard .hd{display:flex;justify-content:space-between;gap:8px;align-items:start}
+#lotcard .facts{color:var(--muted);margin:2px 0 6px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 6px}
+.chip{font-size:12px;border-radius:20px;padding:3px 9px;border:1px solid var(--line);color:var(--muted)}
+.chip.on{color:#fff;border-color:transparent}
+.chip.off{text-decoration:line-through}
+#lotcard .btn{min-height:38px;padding:6px 12px;font-size:14px}

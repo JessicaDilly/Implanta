@@ -1,0 +1,22 @@
+/* Abertura animada (logo Implanta) */
+/* Abertura animada (logo Implanta, opção C) */
+#splash{position:fixed;inset:0;z-index:5000;overflow:hidden;background:radial-gradient(75% 75% at 50% 40%,#f4f2ee 0%,#e7e5e1 60%,#d8d4cd 100%);transition:opacity .55s ease,visibility .55s;cursor:pointer}
+#splash.out{opacity:0;visibility:hidden}
+#splash .ip-stage{position:absolute;left:50%;top:50%;transform-origin:0 0;display:none}
+#splash.go .ip-stage{display:block}
+#splash .ip-tag{position:absolute;display:flex;align-items:center;gap:8px;padding:7px 14px;border-radius:6px;border:1px solid #2b2b2b;background:#fff;color:#2b2b2b;font-size:14px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+#splash .ip-tag span{width:8px;height:8px;background:#c8202f}
+#splash .sp-skip{position:absolute;bottom:18px;left:0;right:0;text-align:center;font:12px Nunito,system-ui,sans-serif;color:rgba(43,43,43,.4)}
+@keyframes ipDraw{0%{stroke-dashoffset:1}100%{stroke-dashoffset:0}}
+@keyframes ipFade{0%{opacity:0}100%{opacity:1}}
+@keyframes ipFadeOut{0%{opacity:1}100%{opacity:0}}
+@keyframes ipRise{0%{transform:scaleY(0);opacity:0}15%{opacity:1}100%{transform:scaleY(1);opacity:1}}
+@keyframes ipDrop{0%{transform:translateY(-150px);opacity:0}55%{transform:translateY(8px);opacity:1}78%{transform:translateY(-4px)}100%{transform:translateY(0);opacity:1}}
+@keyframes ipPop{0%{transform:scale(0);opacity:0}60%{transform:scale(1.1);opacity:1}80%{transform:scale(.97)}100%{transform:scale(1);opacity:1}}
+@keyframes ipTag{0%{transform:translateY(8px);opacity:0}100%{transform:translateY(0);opacity:1}}
+@keyframes ipConverge{0%{transform:scale(1);opacity:1;filter:blur(0)}100%{transform:scale(.22);opacity:0;filter:blur(8px)}}
+@keyframes ipBurst{0%{transform:scale(.2);opacity:0}30%{opacity:.7}100%{transform:scale(2.3);opacity:0}}
+@keyframes ipShine{0%{transform:translateX(-260px) skewX(-20deg)}100%{transform:translateX(760px) skewX(-20deg)}}
+@keyframes ipUp{0%{transform:translateY(24px);opacity:0}100%{transform:translateY(0);opacity:1}}
+@keyframes ipPen{0%{offset-distance:0%;opacity:1}96%{opacity:1}100%{offset-distance:100%;opacity:0}}
+@media (prefers-reduced-motion:reduce){#splash *{animation-duration:.01s!important;animation-delay:0s!important}}
