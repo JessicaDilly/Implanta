@@ -1,7 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <!-- Proposta de ícone: lote visto de cima, recuo tracejado e a unidade implantada -->
-  <rect width="512" height="512" rx="112" fill="#1565c0"/>
-  <path d="M112 144l240-48 64 272-272 48z" fill="#fff"/>
-  <path d="M164 188l152-30.4 41.6 174.4-171.2 31.2z" fill="none" stroke="#1565c0" stroke-width="14" stroke-dasharray="26 18" stroke-linejoin="round"/>
-  <rect x="200" y="216" width="104" height="72" rx="10" transform="rotate(-11 252 252)" fill="#2e7d32"/>
+  <!-- Ícone Implanta (opção C, planta de implantação): lote branco com a projeção do edifício em forma de i e o norte como pingo -->
+  <defs><linearGradient id="cBg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E43A40"/><stop offset="1" stop-color="#B81C2B"/></linearGradient></defs>
+  <rect width="512" height="512" rx="104" fill="url(#cBg)"/>
+  <rect x="124" y="210" width="280" height="250" rx="8" fill="#5A0A12" fill-opacity=".25"/>
+  <rect x="116" y="200" width="280" height="250" rx="8" fill="#fff"/>
+  <circle cx="152" cy="418" r="20" fill="#B81C2B" fill-opacity=".16"/>
+  <circle cx="362" cy="234" r="16" fill="#B81C2B" fill-opacity=".16"/>
+  <circle cx="366" cy="414" r="12" fill="#B81C2B" fill-opacity=".16"/>
+  <polygon points="290,250 334,228 334,388 290,410" fill="#B81C2B" fill-opacity=".3"/>
+  <rect x="222" y="250" width="68" height="160" fill="url(#cBg)"/>
+  <circle cx="256" cy="124" r="40" fill="none" stroke="#fff" stroke-width="10"/>
+  <path d="M256 124V88" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round"/>
+  <path d="M0 104A104 104 0 0 1 104 0H408A104 104 0 0 1 512 104V150C380 186 132 186 0 150Z" fill="#fff" fill-opacity=".1"/>
 </svg>
